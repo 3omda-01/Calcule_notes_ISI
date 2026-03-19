@@ -1,17 +1,12 @@
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Scanner;
-
 public class CalculMoyenne {
-
-    // ─── Enum des types ──────────────────────────────────────────────────────
     enum TypeMatiere {
-        AVEC_TP,      // TP 15% + DS 15% + Examen 70%
-        SANS_TP,      // DS 30% + Examen 70%
-        UNIVERSELLE   // CC 80% + DS 20%  (ex: anglais, francais)
+        AVEC_TP,
+        SANS_TP,
+        UNIVERSELLE
     }
-
-    // ─── Modèle d'une matière ────────────────────────────────────────────────
     static class Matiere {
         String nom;
         TypeMatiere type;
@@ -19,8 +14,6 @@ public class CalculMoyenne {
         double noteDS;
         double noteCC;
         double noteExamen;
-
-        /** TYPE 1 : Avec TP -> TP 15% + DS 15% + Examen 70% */
         Matiere(String nom, double noteTP, double noteDS, double noteExamen) {
             this.nom        = nom;
             this.type       = TypeMatiere.AVEC_TP;
@@ -28,16 +21,12 @@ public class CalculMoyenne {
             this.noteDS     = noteDS;
             this.noteExamen = noteExamen;
         }
-
-        /** TYPE 2 : Sans TP -> DS 30% + Examen 70% */
         Matiere(String nom, double noteDS, double noteExamen) {
             this.nom        = nom;
             this.type       = TypeMatiere.SANS_TP;
             this.noteDS     = noteDS;
             this.noteExamen = noteExamen;
         }
-
-        /** TYPE 3 : Universelle -> CC 80% + DS 20% (anglais, francais...) */
         Matiere(String nom, double noteCC, double noteDS, boolean universelle) {
             this.nom    = nom;
             this.type   = TypeMatiere.UNIVERSELLE;
@@ -53,7 +42,6 @@ public class CalculMoyenne {
                 default:         return 0;
             }
         }
-
         @Override
         public String toString() {
             String details;
@@ -77,8 +65,6 @@ public class CalculMoyenne {
                     nom, details, calculerMoyenne());
         }
     }
-
-    // ─── Saisie ──────────────────────────────────────────────────────────────
     static double lireNote(Scanner sc, String label) {
         double note;
         while (true) {
@@ -93,28 +79,23 @@ public class CalculMoyenne {
             }
         }
     }
-
     static List<Matiere> saisirMatieres(Scanner sc) {
         List<Matiere> matieres = new ArrayList<>();
-
         System.out.print("\nNombre de matieres : ");
         int n = 0;
         while (!sc.hasNextInt() || (n = sc.nextInt()) <= 0) {
             System.out.print("Veuillez entrer un entier positif : ");
             sc.next();
         }
-
         for (int i = 1; i <= n; i++) {
             System.out.println("\n-- Matiere " + i + " --------------------------");
             System.out.print("  Nom de la matiere : ");
             String nom = sc.next();
-
             System.out.println("  Type de matiere :");
             System.out.println("    [1] Normale avec TP  -> TP 15% + DS 15% + Examen 70%");
             System.out.println("    [2] Normale sans TP  -> DS 30% + Examen 70%");
             System.out.println("    [3] Universelle      -> CC 80% + DS 20%  (ex: anglais, francais)");
             System.out.print("  Votre choix (1/2/3) : ");
-
             int choix = 0;
             while (choix < 1 || choix > 3) {
                 if (sc.hasNextInt()) {
@@ -126,7 +107,6 @@ public class CalculMoyenne {
                     sc.next();
                 }
             }
-
             switch (choix) {
                 case 1:
                     double tp  = lireNote(sc, "Note TP");
@@ -153,19 +133,16 @@ public class CalculMoyenne {
         System.out.println("|                   RECAPITULATIF DES NOTES                       |");
         System.out.println("+==================================================================+");
         System.out.println();
-
         double somme = 0;
         for (Matiere m : matieres) {
             System.out.println("  " + m);
             somme += m.calculerMoyenne();
         }
-
         double moyenneGenerale = somme / matieres.size();
         System.out.println();
         System.out.println("------------------------------------------------------------------");
         System.out.printf("  %-42s %.2f / 20%n", "Moyenne generale :", moyenneGenerale);
         System.out.println("------------------------------------------------------------------");
-
         String mention;
         if      (moyenneGenerale >= 16) mention = "Tres Bien";
         else if (moyenneGenerale >= 14) mention = "Bien";
@@ -175,7 +152,6 @@ public class CalculMoyenne {
 
         System.out.printf("  Mention : %s%n%n", mention);
     }
-
     public static void main(String[] args) {
         System.out.println("+==================================================================+");
         System.out.println("|        CALCULATEUR DE MOYENNE - MEMES COEFFICIENTS              |");
@@ -189,4 +165,4 @@ public class CalculMoyenne {
         afficherResultats(matieres);
         sc.close();
     }
-}}
+}
