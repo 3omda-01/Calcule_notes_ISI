@@ -1,0 +1,427 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Calcul des Notes - 2eme SE - Semestre 2</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body {
+  background: #120e0a;
+  display: flex;
+  justify-content: center;
+  padding: 24px;
+  min-height: 100vh;
+  background-image: radial-gradient(ellipse at 50% 0%, #1e1610 0%, #0d0a08 100%);
+}
+.terminal {
+  background: #18120e;
+  width: 920px;
+  max-width: 100%;
+  border: 1px solid #3d2e1e;
+  border-radius: 12px;
+  box-shadow: 0 0 60px rgba(200, 150, 60, 0.06), 0 8px 32px rgba(0,0,0,0.6);
+  font-family: 'Courier New', 'Consolas', 'Liberation Mono', monospace;
+  font-size: 14px;
+  line-height: 1.6;
+  color: #e8c87a;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  max-height: 95vh;
+}
+.terminal-bar {
+  background: #1f1712;
+  padding: 10px 16px;
+  border-bottom: 1px solid #3d2e1e;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  user-select: none;
+}
+.terminal-dot {
+  width: 11px;
+  height: 11px;
+  border-radius: 50%;
+  display: inline-block;
+  transition: opacity .15s;
+}
+.terminal-dot.r { background: #e47a6b; }
+.terminal-dot.y { background: #e8c87a; }
+.terminal-dot.g { background: #7db87d; }
+.terminal-title {
+  color: #6b5540;
+  font-size: 12px;
+  margin-left: auto;
+  letter-spacing: .3px;
+}
+.terminal-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 18px 24px;
+  scrollbar-width: thin;
+  scrollbar-color: #3d2e1e #18120e;
+}
+.terminal-body::-webkit-scrollbar { width: 6px; }
+.terminal-body::-webkit-scrollbar-track { background: #18120e; }
+.terminal-body::-webkit-scrollbar-thumb { background: #3d2e1e; border-radius: 4px; }
+.line {
+  white-space: pre-wrap;
+  word-break: break-word;
+  min-height: 1.2em;
+}
+.line.header {
+  color: #f0d080;
+  font-weight: bold;
+}
+.line.info {
+  color: #c4a86a;
+}
+.line.muted {
+  color: #6b5540;
+}
+.line.bright {
+  color: #f5df9e;
+  font-weight: bold;
+}
+.line.prompt {
+  color: #dbb86a;
+}
+.line.error {
+  color: #d47a6b;
+}
+.line.sep {
+  color: #4a3a28;
+}
+.line.result {
+  color: #e0c080;
+}
+.line.mention {
+  color: #f5df9e;
+  font-weight: bold;
+}
+.line.coeff {
+  color: #b8a068;
+}
+.line.formula {
+  color: #8a7a58;
+  font-style: italic;
+}
+.line.label {
+  color: #d4b070;
+}
+.input-line {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 3px 0;
+}
+.prompt-char {
+  color: #e8c87a;
+}
+.input-field {
+  background: transparent;
+  border: none;
+  outline: none;
+  color: #f5df9e;
+  font-family: inherit;
+  font-size: inherit;
+  flex: 1;
+  caret-color: #e8c87a;
+}
+.input-field::placeholder {
+  color: #4a3a28;
+  opacity: .6;
+}
+@keyframes blink { 0%,100%{opacity:1} 50%{opacity:0} }
+.btn-reset {
+  display: inline-block;
+  margin-top: 16px;
+  padding: 8px 22px;
+  background: transparent;
+  border: 1px solid #5a4a32;
+  color: #e8c87a;
+  font-family: inherit;
+  font-size: 13px;
+  cursor: pointer;
+  border-radius: 6px;
+  transition: all .2s;
+}
+.btn-reset:hover {
+  background: #2a2018;
+  border-color: #c4a86a;
+  box-shadow: 0 0 20px rgba(200, 168, 80, 0.08);
+}
+.formula-box {
+  border: 1px dashed #3d2e1e;
+  border-radius: 8px;
+  padding: 12px 16px;
+  margin: 8px 0;
+  background: rgba(255,255,255,0.02);
+}
+</style>
+</head>
+<body>
+<div class="terminal" id="terminal">
+<div class="terminal-bar">
+<span class="terminal-dot r"></span>
+<span class="terminal-dot y"></span>
+<span class="terminal-dot g"></span>
+<span class="terminal-title">~/2eme-SE/semestre2/notes</span>
+</div>
+<div class="terminal-body" id="output"></div>
+</div>
+<script>
+(function(){
+const out=document.getElementById('output');
+let matiereIdx=1,matieres=[],awaitingInput=false;
+let inputCb=null;
+function addLine(text,cls=''){
+const d=document.createElement('div');
+d.className='line'+(cls?' '+cls:'');
+d.textContent=text;
+out.appendChild(d);
+}
+function addInput(label,cb){
+awaitingInput=true;
+inputCb=cb;
+const d=document.createElement('div');
+d.className='input-line';
+const s=document.createElement('span');
+s.className='prompt-char';
+s.textContent='> ';
+d.appendChild(s);
+const i=document.createElement('input');
+i.className='input-field';
+i.autofocus=true;
+i.placeholder=label;
+d.appendChild(i);
+out.appendChild(d);
+out.scrollTop=out.scrollHeight;
+setTimeout(()=>i.focus(),50);
+i.addEventListener('keydown',function(e){
+if(e.key==='Enter'){
+const v=i.value.trim();
+i.disabled=true;
+i.style.opacity='.6';
+awaitingInput=false;
+cb(v);
+}
+});
+}
+function addInputNum(label,min,max,cb){
+awaitingInput=true;
+inputCb=cb;
+const d=document.createElement('div');
+d.className='input-line';
+const s=document.createElement('span');
+s.className='prompt-char';
+s.textContent='> ';
+d.appendChild(s);
+const i=document.createElement('input');
+i.className='input-field';
+i.autofocus=true;
+i.placeholder=label+' ('+min+'-'+max+')';
+i.type='text';
+d.appendChild(i);
+out.appendChild(d);
+out.scrollTop=out.scrollHeight;
+setTimeout(()=>i.focus(),50);
+i.addEventListener('keydown',function(e){
+if(e.key==='Enter'){
+const v=i.value.trim();
+const n=parseFloat(v);
+if(isNaN(n)||n<min||n>max){
+addLine('  !  La note doit etre entre '+min+' et '+max+'.','error');
+i.value='';
+i.focus();
+return;
+}
+i.disabled=true;
+i.style.opacity='.6';
+awaitingInput=false;
+cb(n);
+}
+});
+}
+function addInputChoice(label,choices,cb){
+awaitingInput=true;
+inputCb=cb;
+const d=document.createElement('div');
+d.className='input-line';
+const s=document.createElement('span');
+s.className='prompt-char';
+s.textContent='> ';
+d.appendChild(s);
+const i=document.createElement('input');
+i.className='input-field';
+i.autofocus=true;
+i.placeholder=label;
+i.type='text';
+d.appendChild(i);
+out.appendChild(d);
+out.scrollTop=out.scrollHeight;
+setTimeout(()=>i.focus(),50);
+i.addEventListener('keydown',function(e){
+if(e.key==='Enter'){
+const v=i.value.trim();
+if(!choices.includes(v)){
+addLine('  Choix invalide, entrez '+choices.join(' ou ')+' : ','error');
+i.value='';
+i.focus();
+return;
+}
+i.disabled=true;
+i.style.opacity='.6';
+awaitingInput=false;
+cb(v);
+}
+});
+}
+function scrollToBottom(){
+out.scrollTop=out.scrollHeight;
+}
+function run(){
+showBanner();
+}
+function showBanner(){
+addLine('+============================================================================+','header');
+addLine('|                CALCUL DES NOTES - 2EME SYSTEMES EMBARQUES                |','header');
+addLine('|                          SEMESTRE 2                                      |','header');
+addLine('+============================================================================+','header');
+addLine('','');
+addLine('  PROCEDURE DE CALCUL DE NOTE :','label');
+addLine('','');
+addLine('  Chaque matiere possede un coefficient et des composantes de note :','muted');
+addLine('','');
+addLine('  [Type 1] Normale avec TP  (coeff 1.5)','bright');
+addLine('    Note = TP x 15%  +  DS x 15%  +  Examen x 70%','formula');
+addLine('','');
+addLine('  [Type 2] Normale sans TP  (coeff 1.5)','bright');
+addLine('    Note = DS x 30%  +  Examen x 70%','formula');
+addLine('','');
+addLine('  [Type 3] Universelle  (coeff 1)','bright');
+addLine('    Note = CC x 80%  +  DS x 20%','formula');
+addLine('','');
+addLine('  Moyenne generale = Somme( Note x Coefficient ) / Somme( Coefficients )','bright');
+addLine('  Resultat sur 20','info');
+addLine('','');
+addLine('  ---  8 matieres normales (coeff 1.5)  |  3 universelles (coeff 1)  ---','sep');
+addLine('','');
+setTimeout(()=>startInput(),600);
+}
+function startInput(){
+addLine('=== DEBUT DE LA SAISIE ===','info');
+nextMatiere();
+}
+function nextMatiere(){
+if(matiereIdx>11){
+finish();
+return;
+}
+addLine('','');
+addLine('-- Matiere '+matiereIdx+'/11 -------------------------','sep');
+addInput('Nom de la matiere',function(name){
+if(!name){addLine('  !  Nom requis.','error');nextMatiere();return;}
+if(matiereIdx<=8){
+addLine('  Type de matiere (coeff 1.5) :','prompt');
+addLine('    [1] Avec TP    -> TP 15% + DS 15% + Examen 70%','muted');
+addLine('    [2] Sans TP    -> DS 30% + Examen 70%','muted');
+addInputChoice('Choix (1/2)',['1','2'],function(choice){
+if(choice==='1'){
+addLine('','');
+addInputNum('Note TP',0,20,function(tp){
+addInputNum('Note DS',0,20,function(ds){
+addInputNum('Note Examen',0,20,function(ex){
+matieres.push({nom:name,type:'AVEC_TP',coeff:1.5,tp:tp,ds:ds,examen:ex});
+matiereIdx++;
+setTimeout(()=>nextMatiere(),100);
+});
+});
+});
+}else{
+addInputNum('Note DS',0,20,function(ds){
+addInputNum('Note Examen',0,20,function(ex){
+matieres.push({nom:name,type:'SANS_TP',coeff:1.5,ds:ds,examen:ex});
+matiereIdx++;
+setTimeout(()=>nextMatiere(),100);
+});
+});
+}
+});
+}else{
+addLine('  Universelle (coeff 1) -> CC 80% + DS 20%','info');
+addLine('','');
+addInputNum('Note CC',0,20,function(cc){
+addInputNum('Note DS',0,20,function(ds){
+matieres.push({nom:name,type:'UNIVERSELLE',coeff:1,cc:cc,ds:ds});
+matiereIdx++;
+setTimeout(()=>nextMatiere(),100);
+});
+});
+}
+});
+scrollToBottom();
+}
+function finish(){
+addLine('','');
+addLine('+============================================================================+','header');
+addLine('|                       RECAPITULATIF DES NOTES                             |','header');
+addLine('+============================================================================+','header');
+addLine('','');
+let sommePonderee=0,sommeCoeffs=0;
+for(const m of matieres){
+let moy=0,details='';
+switch(m.type){
+case'AVEC_TP':
+moy=0.15*m.tp+0.15*m.ds+0.70*m.examen;
+details='TP='+m.tp.toFixed(2)+' (15%) | DS='+m.ds.toFixed(2)+' (15%) | Examen='+m.examen.toFixed(2)+' (70%)';
+break;
+case'SANS_TP':
+moy=0.30*m.ds+0.70*m.examen;
+details='DS='+m.ds.toFixed(2)+' (30%) | Examen='+m.examen.toFixed(2)+' (70%)';
+break;
+case'UNIVERSELLE':
+moy=0.80*m.cc+0.20*m.ds;
+details='CC='+m.cc.toFixed(2)+' (80%) | DS='+m.ds.toFixed(2)+' (20%)';
+break;
+}
+sommePonderee+=moy*m.coeff;
+sommeCoeffs+=m.coeff;
+const pad=m.nom.length>18?m.nom.substring(0,18):m.nom;
+const spaces=' '.repeat(Math.max(1,20-pad.length));
+addLine('  '+pad+spaces+'| Coeff='+m.coeff.toFixed(1)+' | '+details+'  =>  '+moy.toFixed(2)+'/20','result');
+}
+const moyenne=sommePonderee/sommeCoeffs;
+addLine('','');
+addLine('  '+'\u2500'.repeat(90),'sep');
+const avgLine='  Moyenne generale (ponderee) :'+' '.repeat(30)+moyenne.toFixed(2)+' / 20';
+addLine(avgLine,'bright');
+const coeffLine='  Total des coefficients :'+' '.repeat(36)+sommeCoeffs.toFixed(1);
+addLine(coeffLine,'coeff');
+addLine('  '+'\u2500'.repeat(90),'sep');
+let mention;
+if(moyenne>=16) mention='Tres Bien';
+else if(moyenne>=14) mention='Bien';
+else if(moyenne>=12) mention='Assez Bien';
+else if(moyenne>=10) mention='Passable';
+else mention='Insuffisant';
+addLine('','');
+addLine('  Mention : '+mention,'mention');
+addLine('','');
+const btn=document.createElement('button');
+btn.className='btn-reset';
+btn.textContent='$ Recalculer';
+btn.addEventListener('click',function(){
+out.innerHTML='';
+matiereIdx=1;matieres=[];awaitingInput=false;
+setTimeout(()=>run(),100);
+});
+out.appendChild(btn);
+scrollToBottom();
+}
+run();
+})();
+</script>
+</body>
+</html>
